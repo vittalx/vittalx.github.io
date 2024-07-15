@@ -1,0 +1,135 @@
+<!--
+ Copyright 2019 Google Inc.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Credential Manager Web Test</title>
+    <meta name="description" content="WebAuthn Codelab">
+    <link id="favicon" rel="icon" href="https://glitch.com/edit/favicon-app.ico" type="image/x-icon">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/bundle.css">
+    <link rel="stylesheet" href="https://unpkg.com/material-components-web@7.0.0/dist/material-components-web.min.css">
+    <script src="https://cdn.jsdelivr.net/gh/herrjemand/Base64URL-ArrayBuffer@latest/lib/base64url-arraybuffer.js"></script>
+     <script src="components-bundle.js"></script>
+  </head>
+  <body class="mdc-typography">
+    <mwc-top-app-bar-fixed>
+      <span slot="title">Credential Manager Web Test</span>
+    </mwc-top-app-bar-fixed>
+    <main class="content">
+      <h2 class="main_header">
+        Sign in Below
+      </h2>
+      <p class="main_header_subkey">
+        to experience public key credentials through Credential Manager!
+      </p>
+      <form id="form" method="POST" action="/auth/username" >
+        <div class="mdc-text-field mdc-text-field--filled">
+          <span class="mdc-text-field__ripple"></span>
+          <label class="mdc-floating-label" id="username-label">username</label>
+          <input id="usertext" type="text" class="mdc-text-field__input" aria-labelledby="username-label" name="username" />
+          <span class="mdc-line-ripple"></span>
+        </div><br><br>
+        <input type="submit" class="mdc-button mdc-button--raised" value="Create Credential" />
+      </form>
+      <br>
+    <mwc-button id="reauth" raised>Get Credential</mwc-button>
+      <p>
+        Welcome to Credential Manager. To use, please follow these instructions.
+        <ol>
+          <li><b>Type in any unique user name.</b></li>
+          <li><b>Click Create Credential to register a credential via Credential Manager.</b></li>
+          <li><b>Click Get Credential to retrieve a credential via Credential Manager.</b></li>
+          <li><b>If you have saved credentials already, you can directly go to Get Credential (skip steps 1 and 2).</b></li>
+      </ol>
+        Both flows utilize the Credential Manager in order to succeed.<br>Sample app trouble? Contact akaphle@google.com.
+      </p>
+    <h5>
+    Important Messages will show up here:
+    </h5>
+    
+    <p id="hidden_paragraph">
+      You have successfully registered a public key credential via Credential Manager! Try it out by
+      logging in via your locally stored public key credential sourced from our credential manager. To do this
+      just hit <b>Get Credential</b>. You're also 'logged in' as !
+    </p>
+      <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
+      <script type="module">
+        
+        const hidPara = document.querySelector('#hidden_paragraph');
+        const usertxt = document.querySelector('#usertext');
+        hidPara.style.display = 'none';
+        
+        new mdc.textField.MDCTextField(document.querySelector('.mdc-text-field'));
+        import { _fetch, registerCredential, authenticate, isLoggedIn } from '/client.js';
+        const form = document.querySelector('#form');
+        form.addEventListener('submit', e => {
+          e.preventDefault();
+          const form = new FormData(e.target);
+          const cred = {};
+          form.forEach((v, k) => cred[k] = v);
+          console.log("Creds in form: " + JSON.stringify(cred))
+          _fetch(e.target.action, cred)
+          .then(user => {
+            // now supposedly the username is saved. Let's do the password.
+            _fetch('/auth/password', {})
+            .then(user => {
+                registerCredential().then(user => {
+                  console.log("Success!");
+                  usertext.value = '';
+                  hidPara.style.display = '';
+                  hidPara.innerHTML = "You've successfully generated a key! Welcome!";
+                }).catch(e => {
+                  console.log("Register credential failed + " + e);
+                  hidPara.style.display = '';
+                  hidPara.innerHTML = "Error encountered... " + e;
+                }) //these are nested chains since most returns the user.
+            }).catch(e => {
+              alert(e);
+              console.log("Password saving failed " + e);
+              hidPara.style.display = '';
+              hidPara.innerHTML = "Error encountered... " + e;
+            })
+          }).catch(e => {
+            alert(e);
+            hidPara.style.display = '';
+            hidPara.innerHTML = "Error encountered... " + e + " ...ensure you put in a username! GlitchMe may be down.";
+          });
+        });
+        
+        const button = document.querySelector('#reauth');
+      button.addEventListener('click', e => {
+        authenticate().then(user => {
+          if (user) {
+            location.href = '/home';
+          } else {
+            throw 'User not found.';
+          }
+        }).catch(e => {
+          console.error(e.message || e);
+          alert('Authentication failed. Try again?');
+          hidPara.style.display = '';
+          hidPara.innerHTML = (" GetCred Failed with: " + e + " - try again? " +
+           "You may have deleted the server version of the key and only have it locally." + 
+           " Make a new one under the same username and it should work!");
+        });        
+      });
+      </script>
+    </main>
+  </body>
+</html>
