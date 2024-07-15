@@ -1,0 +1,253 @@
+<!doctype html>
+<html class="no-js" lang="">
+
+<head>
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+  <meta charset="utf-8">
+  <title>Passkey playground</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      text-align: center;
+      font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+      padding: 0;
+      margin: 0;
+    }
+    section {
+      max-width: 1024px;
+      padding: 16px;
+      margin: 16px auto;
+      border: 1px #747c96 solid;
+      border-radius: 4px;
+    }
+    h1 {
+      background-color: #222;
+      margin: 0;
+      padding: 8px;
+      color: white;
+    }
+    h2 {
+      margin: 0;
+    }
+    code {
+      font-size: 1.1em;
+    }
+
+    form {
+      margin: 0.7em;
+    }
+
+    input, select, label {
+      display: inline-block;
+      padding: 4px;
+      width: 200px;
+    }
+    input {
+      width: 188px;
+    }
+    input:required {
+      border: 2px solid rgb(181, 34, 34);
+      border-radius: 2px;
+    }
+    .form-row {
+      margin: 4px;
+    }
+    .form-row label {
+      width: 270px;
+      text-align: left;
+    }
+    input[type=submit] {
+      font-size: 1.2em;
+      padding: 0.5em;
+      margin-top: 0.7em;
+      border-radius: 4px;
+      background-color: rgb(202, 240, 223);
+    }
+
+    footer {
+      font-size: 0.8em;
+      color: #656565;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Passkey playground 🔑</h1>
+  <section>
+    <h2>Create a new passkey (aka Registration)</h2>
+    <p>Below, a simple form to create passkeys. The required fields are in red.</p>
+    <form>
+      <div class="form-row">
+        <label for="reg-user-name">
+          <code>user.name</code>, <code>user.displayName</code>
+        </label>
+        <input type="text" id="reg-user-name" placeholder="User Name" required/>
+      </div>
+
+      <div class="form-row">
+        <label for="reg-require-reg-resident-key">
+          <code>requireResidentKey</code>
+        </label>
+        <select id="reg-require-reg-resident-key">
+          <option value="false" selected> false (default)</option>
+          <option value="true">true</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label for="reg-resident-key">
+          <code>residentKey</code>
+        </label>
+        <select id="reg-resident-key">
+          <option value="discouraged" selected>discouraged (default)</option>
+          <option value="preferred">preferred</option>
+          <option value="required">required</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label for="reg-user-verification">
+          <code>userVerification</code>
+        </label>
+        <select id="reg-user-verification">
+          <option value="discouraged">discouraged</option>
+          <option value="preferred" selected>preferred (default)</option>
+          <option value="required">required</option>
+        </select>
+      </div>
+      
+      <input type="submit" id="create-passkey" value="Create a passkey"/>
+    </form>
+  </section>
+
+  <section>
+    <h2>Use your passkey (aka Authentication)</h2>
+    <form>
+      <div class="form-row">
+        <label for="auth-user-verification">
+          <code>userVerification</code>
+        </label>
+        <select id="auth-user-verification">
+          <option value="discouraged">discouraged</option>
+          <option value="preferred" selected>preferred (default)</option>
+          <option value="required">required</option>
+        </select>
+      </div>
+
+      <input type="submit" id="use-passkey" value="Use your passkey"/>
+    </form>
+  </section>
+
+  <footer>
+About Passkeys    
+  </footer>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      /**
+       * Handler for registration
+       */
+      document.getElementById("create-passkey").addEventListener("click", async function(e) {
+        e.preventDefault();
+        try {
+          const passkeyName = document.getElementById("reg-user-name").value;
+          if (!passkeyName || passkeyName.length === 0) {
+            alert("undefined or empty user.name")
+            return
+          }
+
+          const challenge = new Uint8Array(32);
+          crypto.getRandomValues(challenge);
+
+          const userId = new Uint8Array(32);
+          crypto.getRandomValues(userId);
+
+          const registrationOptions = {
+            "publicKey": {
+              "authenticatorSelection": {
+                "requireResidentKey": document.getElementById("reg-require-reg-resident-key").value === "true",
+                "residentKey": document.getElementById("reg-resident-key").value,
+                "userVerification": document.getElementById("reg-user-verification").value,
+              },
+              "challenge": challenge,
+              "pubKeyCredParams": [
+                {
+                  "alg": -7,
+                  "type": "public-key"
+                },
+                {
+                  "alg": -257,
+                  "type": "public-key"
+                }
+              ],
+              "rp": {
+                "id": window.location.hostname,
+                "name": "Passkey playground"
+              },
+              "user": {
+                "name": passkeyName,
+                "displayName": passkeyName,
+                "id": userId,
+              }
+            }
+          };
+          
+          console.log("triggering registration with options", registrationOptions);
+          const newCredential = await navigator.credentials.create(registrationOptions)
+          console.log("passkey created: ", newCredential);
+          alert("Success! Passkey created.");
+        } catch(e) {
+          const message = `error occurred during passkey creation: ${e}`;
+          console.error(message);
+          alert(message);
+        }
+      })
+
+      /**
+       * Handler for authentication
+       */
+       autoLogin();
+     // document.getElementById("use-passkey").addEventListener("click", async function(e) {
+        //e.preventDefault();
+        
+          async function autoLogin(){
+            const challenge = new Uint8Array(32);
+          crypto.getRandomValues(challenge);
+
+          const userId = new Uint8Array(32);
+          crypto.getRandomValues(userId);
+          try {
+            const authenticationOptions = {
+              publicKey: {
+                challenge: challenge,
+                userVerification: document.getElementById("auth-user-verification").value
+              },
+              rp: {
+                  "id": window.location.hostname,
+                  "name": "Passkey playground"
+              },
+            };
+            console.log("triggering authentication with options", authenticationOptions);
+            const authentication = await navigator.credentials.get(authenticationOptions);
+            console.log(authentication);
+            alert("Successful passkey authentication");
+          } catch(e) {
+            const message = `error occurred during passkey authentication: ${e}`;
+            console.error(message);
+            alert(message);
+          }
+          }
+      //});
+    })
+  </script>
+
+
+<form>
+    <label for="username">Username:</label>
+    <input type="text" id="use-passkey" autocomplete="username webauthn">
+    <!-- Other form fields can be added here -->
+    <button type="submit">Submit</button>
+</form>
+  
+</body>
+</html>
