@@ -143,6 +143,14 @@
 About Passkeys    
   </footer>
 
+  
+<form>
+    <label for="username">Username:</label>
+    <input type="text" id="user-passkey" autocomplete="username webauthn">
+    <!-- Other form fields can be added here -->
+    <button type="submit">Submit</button>
+</form>
+  
   <script>
     document.addEventListener("DOMContentLoaded", function() {
       /**
@@ -237,7 +245,7 @@ About Passkeys
       });
     })
 
-    document.getElementById("use-passkey").addEventListener("focus", async function(e) {
+    document.getElementById("user-passkey").addEventListener("focus", async function(e) {
         e.preventDefault();
         const challenge = new Uint8Array(32);
           crypto.getRandomValues(challenge);
@@ -269,12 +277,6 @@ About Passkeys
   </script>
 
 
-<form>
-    <label for="username">Username:</label>
-    <input type="text" id="use-passkey" autocomplete="username webauthn">
-    <!-- Other form fields can be added here -->
-    <button type="submit">Submit</button>
-</form>
   
 </body>
 </html>
