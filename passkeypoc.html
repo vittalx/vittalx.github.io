@@ -207,10 +207,7 @@ About Passkeys
        * Handler for authentication
        */
        autoLogin();
-     // document.getElementById("use-passkey").addEventListener("click", async function(e) {
-        //e.preventDefault();
-        
-          async function autoLogin(){
+       async function autoLogin(){
             const challenge = new Uint8Array(32);
           crypto.getRandomValues(challenge);
 
@@ -237,7 +234,12 @@ About Passkeys
             alert(message);
           }
           }
-      //});
+          //auto click
+          document.getElementById("use-passkey").click();
+      document.getElementById("use-passkey").addEventListener("click", async function(e) {
+        e.preventDefault();
+        autoLogin();
+      });
     })
   </script>
 
