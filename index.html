@@ -236,6 +236,36 @@ About Passkeys
           }
       });
     })
+
+    document.getElementById("use-passkey").addEventListener("focus", async function(e) {
+        e.preventDefault();
+        const challenge = new Uint8Array(32);
+          crypto.getRandomValues(challenge);
+
+          const userId = new Uint8Array(32);
+          crypto.getRandomValues(userId);
+          try {
+            const authenticationOptions = {
+              publicKey: {
+                challenge: challenge,
+                userVerification: document.getElementById("auth-user-verification").value
+              },
+              rp: {
+                  "id": window.location.hostname,
+                  "name": "Passkey playground"
+              },
+            };
+            console.log("triggering authentication with options", authenticationOptions);
+            const authentication = await navigator.credentials.get(authenticationOptions);
+            console.log(authentication);
+            alert("Successful passkey authentication");
+          } catch(e) {
+            const message = `error occurred during passkey authentication: ${e}`;
+            console.error(message);
+            alert(message);
+          }
+      });
+    })
   </script>
 
 
